@@ -80,7 +80,17 @@ export async function saveTaskAudioForCampaign(
   if (!userId || !campaignId) throw new Error('User ID and Campaign ID are required.');
 
   const supabase = createClient();
-  const safeKey = taskKey.replace(/\s+/g, '-');
+  // Limita el nombre, quita acentos/diacríticos y deja sólo caracteres seguros
+  // para path de Storage (los nombres de tarea generados por IA suelen traer
+  // signos y emojis que rompen el upload o las URLs firmadas).
+  const safeKey =
+    taskKey
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-zA-Z0-9_-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 64) || 'task';
   const path = `${userId}/audios/${safeKey}-${Date.now()}.wav`;
 
   const { error: upErr } = await supabase.storage

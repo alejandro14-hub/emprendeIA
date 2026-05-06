@@ -281,7 +281,6 @@ function SavedPathsList() {
     const [shownMilestones, setShownMilestones] = useState<Record<string, number[]>>({});
 
     const { generateAndPlayAudio } = useAudioPlayer();
-    const { toast } = useToast();
 
     useEffect(() => {
         if (user && firestore) {
@@ -340,11 +339,13 @@ function SavedPathsList() {
                 taskAction: step.tarea_del_dia,
             }),
             async (audioDataUrl) => {
+                // Guardado en Supabase es best-effort: si falla (RLS, cuota,
+                // red), el audio ya está sonando en memoria y la UX no se
+                // rompe. Sólo logueamos para diagnóstico, sin toast.
                 try {
-                    // The onSnapshot listener will automatically update the UI.
                     await saveTaskAudioForPath(storage, firestore, user.uid, path.id, taskKey, audioDataUrl);
-                } catch(e) {
-                    toast({title: "Error al guardar", description: "No se pudo guardar el audio en tu cuenta.", variant: "destructive"})
+                } catch (e) {
+                    console.warn('saveTaskAudioForPath (best-effort):', e);
                 }
             }
         );

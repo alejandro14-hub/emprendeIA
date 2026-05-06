@@ -211,7 +211,6 @@ function SavedCampaignsList() {
     const [isLoading, setIsLoading] = useState(true);
 
     const { generateAndPlayAudio } = useAudioPlayer();
-    const { toast } = useToast();
 
     useEffect(() => {
         if (user && firestore) {
@@ -243,11 +242,13 @@ function SavedCampaignsList() {
                 taskToExplain: task,
             }),
             async (audioDataUrl) => {
-                 try {
-                    // The onSnapshot listener will automatically update the UI.
+                // Guardado en Supabase es best-effort: si falla (RLS, cuota,
+                // red), el audio ya está sonando en memoria y la UX no se
+                // rompe. Sólo logueamos para diagnóstico, sin toast.
+                try {
                     await saveTaskAudioForCampaign(storage, firestore, user.uid, campaign.id, taskKey, audioDataUrl);
-                } catch(e) {
-                    toast({title: "Error al guardar", description: "No se pudo guardar el audio en tu cuenta.", variant: "destructive"})
+                } catch (e) {
+                    console.warn('saveTaskAudioForCampaign (best-effort):', e);
                 }
             }
         );

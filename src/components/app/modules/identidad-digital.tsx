@@ -100,7 +100,15 @@ export function IdentidadDigitalModule() {
     try {
         const { audioUrl } = await generateModuleAudio({ textToSpeak: moduleIntroductionText });
         setGeneratedAudio(audioUrl);
-        localStorage.setItem(AUDIO_CACHE_KEY, audioUrl);
+        // Cachear en localStorage es best-effort: el audio en base64 puede pesar
+        // varios MB y rebasar la quota (5-10 MB). Si falla, igual mostramos el
+        // audio en memoria — sólo se perderá entre recargas.
+        try {
+            localStorage.setItem(AUDIO_CACHE_KEY, audioUrl);
+        } catch (cacheErr) {
+            console.warn('No se pudo cachear el audio en localStorage (quota):', cacheErr);
+            try { localStorage.removeItem(AUDIO_CACHE_KEY); } catch {}
+        }
     } catch (e) {
         console.error(e);
         toast({
